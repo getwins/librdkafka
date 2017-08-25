@@ -1197,14 +1197,17 @@ static bool read_uncompressed_length(struct snappy_decompressor *d,
 				 */
 	*result = 0;
 	u32 shift = 0;
+	size_t n;
+	const char *ip;
+	unsigned char c;
 	while (true) {
 		if (shift >= 32)
 			return false;
-		size_t n;
-		const char *ip = peek(d->reader, &n);
+		
+		ip = peek(d->reader, &n);
 		if (n == 0)
 			return false;
-		const unsigned char c = *(const unsigned char *)(ip);
+		c = *(const unsigned char *)(ip);
 		skip(d->reader, 1);
 		*result |= (u32) (c & 0x7f) << shift;
 		if (c < 128) {
@@ -1337,6 +1340,7 @@ static bool refill_tag(struct snappy_decompressor *d)
 
 	/* Read more bytes from reader if needed */
 	u32 nbuf = (u32) (d->ip_limit - ip);
+	u32 to_add;
 
 	if (nbuf < needed) {
 		/*
@@ -1353,7 +1357,7 @@ static bool refill_tag(struct snappy_decompressor *d)
 			const char *src = peek(d->reader, &length);
 			if (length == 0)
 				return false;
-			u32 to_add = min_t(u32, needed - nbuf, (u32) length);
+			to_add = min_t(u32, needed - nbuf, (u32) length);
 			memcpy(d->scratch + nbuf, src, to_add);
 			nbuf += to_add;
 			skip(d->reader, to_add);
